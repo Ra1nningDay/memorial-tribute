@@ -141,9 +141,8 @@ export default function TributeGallery() {
             -webkit-backdrop-filter: blur(20px);
             padding: 40px 24px 32px;
             text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: static; /* no sticky header */
+            z-index: 1;
             border-bottom: 1px solid rgba(212, 175, 55, 0.15);
           }
           
