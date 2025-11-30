@@ -53,6 +53,7 @@ export default function MemorialTribute() {
         const data = new FormData();
         data.append('file', formData.image);
         data.append('upload_preset', uploadPreset);
+        data.append('folder', 'bung');
 
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -109,8 +110,6 @@ export default function MemorialTribute() {
       }}>
         <style>
           {`
-            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Mitr:wght@300;400;500&display=swap');
-            
             @keyframes fadeInUp {
               from {
                 opacity: 0;
@@ -214,8 +213,6 @@ export default function MemorialTribute() {
     }}>
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Mitr:wght@300;400;500&display=swap');
-          
           * {
             box-sizing: border-box;
           }
