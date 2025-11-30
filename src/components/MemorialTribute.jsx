@@ -7,29 +7,45 @@ export default function MemorialTribute() {
     name: '',
     relationship: '',
     message: '',
-    image: null
+    images: []
   });
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, image: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFormData({ ...formData, images: files });
+
+      const newPreviews = [];
+      let loadedCount = 0;
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result);
+          loadedCount++;
+          if (loadedCount === files.length) {
+            setImagePreviews(newPreviews);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
-  const removeImage = () => {
-    setFormData({ ...formData, image: null });
-    setImagePreview(null);
-    if (fileInputRef.current) {
+  const removeImage = (index) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({ ...formData, images: newImages });
+
+    const newPreviews = [...imagePreviews];
+    newPreviews.splice(index, 1);
+    setImagePreviews(newPreviews);
+
+    if (newImages.length === 0 && fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
@@ -39,10 +55,11 @@ export default function MemorialTribute() {
     setIsSubmitting(true);
 
     try {
-      let imageUrl = null;
+      let imageUrls = [];
+      let imageUrl = null; // Keep for backward compatibility if needed, or just use the first one
 
-      // Upload image to Cloudinary if exists
-      if (formData.image) {
+      // Upload images to Cloudinary if exists
+      if (formData.images && formData.images.length > 0) {
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -50,26 +67,33 @@ export default function MemorialTribute() {
           throw new Error('Cloudinary configuration is missing');
         }
 
-        const data = new FormData();
-        data.append('file', formData.image);
-        data.append('upload_preset', uploadPreset);
-        data.append('folder', 'bung');
+        const uploadPromises = formData.images.map(async (file) => {
+          const data = new FormData();
+          data.append('file', file);
+          data.append('upload_preset', uploadPreset);
+          data.append('folder', 'bung');
 
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-          {
-            method: 'POST',
-            body: data,
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+            {
+              method: 'POST',
+              body: data,
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error('Image upload failed');
           }
-        );
 
-        if (!response.ok) {
-          throw new Error('Image upload failed');
-        }
+          const result = await response.json();
+          return result.secure_url;
+        });
 
-        const result = await response.json();
-        imageUrl = result.secure_url;
-        console.log('Uploaded Image URL:', imageUrl);
+        imageUrls = await Promise.all(uploadPromises);
+        console.log('Uploaded Image URLs:', imageUrls);
+
+        // Use JSON string to store multiple URLs in the text column
+        imageUrl = JSON.stringify(imageUrls);
       }
 
       // Save to Supabase
@@ -501,55 +525,87 @@ export default function MemorialTribute() {
               color: '#8B8178',
               fontWeight: '500'
             }}>
-              แนบรูปภาพ <span style={{ color: '#B8AFA4' }}>(ไม่บังคับ)</span>
+              แนบรูปภาพ
             </label>
 
-            {imagePreview ? (
+            {imagePreviews.length > 0 ? (
               <div style={{
-                position: 'relative',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                background: '#fff'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                gap: '10px',
+                marginBottom: '10px'
               }}>
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  style={{
-                    width: '100%',
-                    maxHeight: '250px',
-                    objectFit: 'cover',
-                    display: 'block'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} style={{
+                    position: 'relative',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    background: '#fff',
+                    aspectRatio: '1'
+                  }}>
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: 'rgba(0, 0, 0, 0.6)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {/* Always show upload button to allow adding more images */}
+                <label className="upload-area" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0',
+                  minHeight: '100px',
+                  border: '2px dashed rgba(212, 175, 55, 0.4)',
+                  borderRadius: '12px'
+                }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                  />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
+                </label>
               </div>
             ) : (
               <label className="upload-area" style={{ display: 'block' }}>
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageChange}
                   ref={fileInputRef}
                   style={{ display: 'none' }}
@@ -576,12 +632,6 @@ export default function MemorialTribute() {
                   marginBottom: '4px'
                 }}>
                   แตะเพื่อเลือกรูปภาพ
-                </p>
-                <p style={{
-                  color: '#B8AFA4',
-                  fontSize: '13px'
-                }}>
-                  รองรับ JPG, PNG
                 </p>
               </label>
             )}
