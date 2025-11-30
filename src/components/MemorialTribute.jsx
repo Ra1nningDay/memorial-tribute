@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 
+import { supabase } from '../lib/supabase';
+
 export default function MemorialTribute() {
   const [formData, setFormData] = useState({
     name: '',
@@ -35,12 +37,63 @@ export default function MemorialTribute() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+
+    try {
+      let imageUrl = null;
+
+      // Upload image to Cloudinary if exists
+      if (formData.image) {
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+        if (!cloudName || !uploadPreset) {
+          throw new Error('Cloudinary configuration is missing');
+        }
+
+        const data = new FormData();
+        data.append('file', formData.image);
+        data.append('upload_preset', uploadPreset);
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: data,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Image upload failed');
+        }
+
+        const result = await response.json();
+        imageUrl = result.secure_url;
+        console.log('Uploaded Image URL:', imageUrl);
+      }
+
+      // Save to Supabase
+      const { error } = await supabase
+        .from('tributes')
+        .insert([
+          {
+            name: formData.name,
+            relationship: formData.relationship,
+            messages: formData.message,
+            image_url: imageUrl
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -86,7 +139,7 @@ export default function MemorialTribute() {
             }
           `}
         </style>
-        
+
         <div style={{
           textAlign: 'center',
           animation: 'fadeInUp 0.8s ease-out',
@@ -105,10 +158,10 @@ export default function MemorialTribute() {
             boxShadow: '0 10px 40px rgba(212, 175, 55, 0.3)'
           }}>
             <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          
+
           <h2 style={{
             fontFamily: "'Mitr', sans-serif",
             fontSize: '28px',
@@ -118,17 +171,17 @@ export default function MemorialTribute() {
           }}>
             ขอบคุณสำหรับข้อความ
           </h2>
-          
+
           <p style={{
             color: '#8B8178',
             fontSize: '16px',
             lineHeight: '1.8',
             fontWeight: '300'
           }}>
-            ข้อความของท่านจะถูกส่งต่อให้ครอบครัว<br/>
+            ข้อความของท่านจะถูกส่งต่อให้ครอบครัว<br />
             ขอบคุณที่ร่วมแสดงความอาลัย
           </p>
-          
+
           <div style={{
             marginTop: '40px',
             display: 'flex',
@@ -264,7 +317,7 @@ export default function MemorialTribute() {
         borderRadius: '50%',
         animation: 'float 6s ease-in-out infinite'
       }} />
-      
+
       <div style={{
         position: 'absolute',
         bottom: '-30px',
@@ -305,8 +358,8 @@ export default function MemorialTribute() {
               background: 'linear-gradient(90deg, transparent, #D4AF37)'
             }} />
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3L14.5 8.5L21 9.5L16.5 14L17.5 21L12 18L6.5 21L7.5 14L3 9.5L9.5 8.5L12 3Z" 
-                    fill="#D4AF37" opacity="0.6"/>
+              <path d="M12 3L14.5 8.5L21 9.5L16.5 14L17.5 21L12 18L6.5 21L7.5 14L3 9.5L9.5 8.5L12 3Z"
+                fill="#D4AF37" opacity="0.6" />
             </svg>
             <div style={{
               width: '60px',
@@ -324,7 +377,7 @@ export default function MemorialTribute() {
           }}>
             ด้วยรักและอาลัย
           </p>
-          
+
           <h1 style={{
             fontFamily: "'Mitr', sans-serif",
             fontSize: '32px',
@@ -335,7 +388,7 @@ export default function MemorialTribute() {
           }}>
             รัส ปัทมะศังข์
           </h1>
-          
+
           <p style={{
             fontSize: '16px',
             color: '#8B8178',
@@ -369,7 +422,7 @@ export default function MemorialTribute() {
           animationDelay: '0.2s',
           animationFillMode: 'backwards'
         }}>
-          ร่วมบันทึกความทรงจำและความดีงาม<br/>
+          ร่วมบันทึกความทรงจำและความดีงาม<br />
           ที่มีต่อผู้ล่วงลับ
         </p>
 
@@ -453,7 +506,7 @@ export default function MemorialTribute() {
             }}>
               แนบรูปภาพ <span style={{ color: '#B8AFA4' }}>(ไม่บังคับ)</span>
             </label>
-            
+
             {imagePreview ? (
               <div style={{
                 position: 'relative',
@@ -461,9 +514,9 @@ export default function MemorialTribute() {
                 overflow: 'hidden',
                 background: '#fff'
               }}>
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
+                <img
+                  src={imagePreview}
+                  alt="Preview"
                   style={{
                     width: '100%',
                     maxHeight: '250px',
@@ -491,7 +544,7 @@ export default function MemorialTribute() {
                   }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>
@@ -571,7 +624,7 @@ export default function MemorialTribute() {
             color: '#B8AFA4',
             lineHeight: '1.6'
           }}>
-            วัดธาตุทอง พระอารามหลวง<br/>
+            วัดธาตุทอง พระอารามหลวง<br />
             ๑-๔ ธันวาคม ๒๕๖๘
           </p>
         </div>
