@@ -613,6 +613,7 @@ export default function MemorialTribute() {
                 <div style={{
                   width: '60px',
                   height: '60px',
+                  
                   margin: '0 auto 16px',
                   borderRadius: '50%',
                   background: 'rgba(212, 175, 55, 0.1)',
