@@ -56,7 +56,7 @@ export default function TributeGallery() {
     return tributes.filter((tribute) => {
       const images = getImages(tribute);
       if (filter === 'photo') return images.length > 0;
-      if (filter === 'text') return images.length === 0;
+      // 'text' tab works like a guestbook: show every tribute
       return true;
     });
   }, [tributes, filter]);
@@ -602,14 +602,15 @@ export default function TributeGallery() {
           {filteredTributes.map((tribute, index) => {
             const images = getImages(tribute);
             const hasImage = images.length > 0;
-            const isQuote = !hasImage && (tribute.messages?.length < 100); // Simple heuristic for quote style
+            const showImage = filter !== 'text' && hasImage;
+            const isQuote = !showImage && (tribute.messages?.length < 100); // Simple heuristic for quote style
 
             return (
               <div
                 key={tribute.id || index}
                 className={`tribute-card ${isQuote ? 'quote-card' : ''}`}
               >
-                {hasImage && (
+                {showImage && (
                   <img
                     src={images[0]}
                     alt="Memory"
