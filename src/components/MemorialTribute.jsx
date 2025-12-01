@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 
 import { supabase } from '../lib/supabase';
 
@@ -222,6 +223,19 @@ export default function MemorialTribute() {
               }} />
             ))}
           </div>
+
+          <Link to="/gallery" style={{
+            display: 'inline-block',
+            marginTop: '30px',
+            color: '#D4AF37',
+            textDecoration: 'none',
+            fontSize: '16px',
+            borderBottom: '1px solid #D4AF37',
+            paddingBottom: '2px',
+            transition: 'all 0.3s ease'
+          }}>
+            ดูข้อความทั้งหมด
+          </Link>
         </div>
       </div>
     );
@@ -447,6 +461,33 @@ export default function MemorialTribute() {
           ที่มีต่อผู้ล่วงลับ
         </p>
 
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '40px',
+          animation: 'fadeIn 0.8s ease-out',
+          animationDelay: '0.3s',
+          animationFillMode: 'backwards'
+        }}>
+          <Link to="/gallery" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#D4AF37',
+            textDecoration: 'none',
+            fontSize: '15px',
+            padding: '8px 16px',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            borderRadius: '20px',
+            transition: 'all 0.3s ease',
+            background: 'rgba(255, 255, 255, 0.5)'
+          }}>
+            <span>อ่านคำไว้อาลัยทั้งหมด</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
+
         {/* Form */}
         <form onSubmit={handleSubmit} style={{
           animation: 'fadeIn 0.8s ease-out',
@@ -613,7 +654,7 @@ export default function MemorialTribute() {
                 <div style={{
                   width: '60px',
                   height: '60px',
-                  
+
                   margin: '0 auto 16px',
                   borderRadius: '50%',
                   background: 'rgba(212, 175, 55, 0.1)',
