@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 export default function TributeGallery() {
   const [tributes, setTributes] = useState([]);
@@ -611,9 +612,11 @@ export default function TributeGallery() {
               >
                 {showImage && (
                   <img
-                    src={images[0]}
+                    src={getOptimizedImageUrl(images[0], 600)}
                     alt="Memory"
                     className="tribute-image"
+                    loading="lazy"
+                    decoding="async"
                     onClick={() => {
                       setSelectedImage(images[0]);
                       setSelectedTribute(tribute);
@@ -667,7 +670,7 @@ export default function TributeGallery() {
                 <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <img src={selectedImage} alt="Full size" className="modal-image" />
+            <img src={getOptimizedImageUrl(selectedImage, 1200)} alt="Full size" className="modal-image" />
             {selectedTribute && (
               <div style={{ padding: '24px' }}>
                 <p className="tribute-message" style={{ fontSize: '16px' }}>

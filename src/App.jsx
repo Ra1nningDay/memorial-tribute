@@ -1,14 +1,31 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MemorialTribute from './components/MemorialTribute';
-import TributeGallery from './components/TributeGallery';
+
+// Lazy load components
+const MemorialTribute = lazy(() => import('./components/MemorialTribute'));
+const TributeGallery = lazy(() => import('./components/TributeGallery'));
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<MemorialTribute />} />
-        <Route path="/gallery" element={<TributeGallery />} />
-      </Routes>
+      <Suspense fallback={
+        <div style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#FAF8F5',
+          color: '#D4AF37',
+          fontFamily: "'Sarabun', sans-serif"
+        }}>
+          กำลังโหลด...
+        </div>
+      }>
+        <Routes>
+          <Route path="/" element={<MemorialTribute />} />
+          <Route path="/gallery" element={<TributeGallery />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
