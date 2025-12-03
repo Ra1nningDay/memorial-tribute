@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { exportTributes } from '../utils/exportUtils';
 
 export default function TributeGallery() {
   const [tributes, setTributes] = useState([]);
@@ -9,7 +10,9 @@ export default function TributeGallery() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [selectedImage, setSelectedImage] = useState(null);
-  const [selectedTribute, setSelectedTribute] = useState(null); // For modal details
+  const [selectedTribute, setSelectedTribute] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +35,21 @@ export default function TributeGallery() {
       setError(err.message || 'Unable to load tributes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (tributes.length === 0) return;
+    setIsExporting(true);
+    try {
+      await exportTributes(tributes, (progress) => {
+        setExportProgress(progress);
+      });
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    } finally {
+      setIsExporting(false);
+      setExportProgress('');
     }
   };
 
@@ -525,6 +543,41 @@ export default function TributeGallery() {
               <div className="stat-label">รูปภาพ</div>
             </div>
           </div>
+
+          {/* Export Button (Header) */}
+          <button
+            onClick={handleExport}
+            disabled={isExporting || tributes.length === 0}
+            title="Export Data"
+            style={{
+              position: 'absolute',
+              top: '24px',
+              right: '24px',
+              background: 'rgba(255, 255, 255, 0.5)',
+              border: '1px solid rgba(212, 175, 55, 0.3)',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#D4AF37',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -611,17 +664,34 @@ export default function TributeGallery() {
                 className={`tribute-card ${isQuote ? 'quote-card' : ''}`}
               >
                 {showImage && (
-                  <img
-                    src={getOptimizedImageUrl(images[0], 600)}
-                    alt="Memory"
-                    className="tribute-image"
-                    loading="lazy"
-                    decoding="async"
-                    onClick={() => {
-                      setSelectedImage(images[0]);
-                      setSelectedTribute(tribute);
-                    }}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={getOptimizedImageUrl(images[0], 600)}
+                      alt="Memory"
+                      className="tribute-image"
+                      loading="lazy"
+                      decoding="async"
+                      onClick={() => {
+                        setSelectedImage(images[0]);
+                        setSelectedTribute(tribute);
+                      }}
+                    />
+                    {images.length > 1 && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        backdropFilter: 'blur(4px)'
+                      }}>
+                        +{images.length - 1}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <div className="tribute-content">
@@ -661,16 +731,99 @@ export default function TributeGallery() {
         </svg>
       </button>
 
+      {/* Export Progress Modal */}
+      {isExporting && (
+        <div className="modal-overlay" style={{ zIndex: 300 }}>
+          <div className="modal-content" style={{ padding: '40px', textAlign: 'center', maxWidth: '400px' }}>
+            <div className="empty-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" stroke="#28a745" fill="none" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+                <path d="M12 2a10 10 0 0 1 10 10" />
+              </svg>
+            </div>
+            <h3 style={{ fontFamily: "'Mitr', sans-serif", marginTop: '20px', color: '#5D5348' }}>กำลัง Export ข้อมูล</h3>
+            <p style={{ color: '#8B8178', marginTop: '10px' }}>{exportProgress}</p>
+          </div>
+        </div>
+      )}
+
       {/* Image Modal */}
       {selectedImage && (
         <div className="modal-overlay" onClick={() => setSelectedImage(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', width: '95%' }}>
             <button className="modal-close" onClick={() => setSelectedImage(null)}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5D5348" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <img src={getOptimizedImageUrl(selectedImage, 1200)} alt="Full size" className="modal-image" />
+
+            {/* Carousel Logic */}
+            {(() => {
+              const images = selectedTribute ? getImages(selectedTribute) : [selectedImage];
+              const currentIndex = images.indexOf(selectedImage);
+
+              const handlePrev = (e) => {
+                e.stopPropagation();
+                const newIndex = (currentIndex - 1 + images.length) % images.length;
+                setSelectedImage(images[newIndex]);
+              };
+
+              const handleNext = (e) => {
+                e.stopPropagation();
+                const newIndex = (currentIndex + 1) % images.length;
+                setSelectedImage(images[newIndex]);
+              };
+
+              return (
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                  {images.length > 1 && (
+                    <button
+                      onClick={handlePrev}
+                      style={{
+                        position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
+                        width: '40px', height: '40px', cursor: 'pointer', zIndex: 10,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+                      }}
+                    >
+                      ❮
+                    </button>
+                  )}
+
+                  <img
+                    src={getOptimizedImageUrl(selectedImage, 1200)}
+                    alt="Full size"
+                    className="modal-image"
+                    style={{ maxHeight: '80vh' }}
+                  />
+
+                  {images.length > 1 && (
+                    <button
+                      onClick={handleNext}
+                      style={{
+                        position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
+                        width: '40px', height: '40px', cursor: 'pointer', zIndex: 10,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+                      }}
+                    >
+                      ❯
+                    </button>
+                  )}
+
+                  {images.length > 1 && (
+                    <div style={{
+                      position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.5)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px'
+                    }}>
+                      {currentIndex + 1} / {images.length}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {selectedTribute && (
               <div style={{ padding: '24px' }}>
                 <p className="tribute-message" style={{ fontSize: '16px' }}>
