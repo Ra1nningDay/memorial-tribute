@@ -63,7 +63,7 @@ export default function TributeGallery() {
         if (Array.isArray(parsed)) {
           return parsed.filter(Boolean);
         }
-      } catch (_) {
+      } catch {
         /* fall through to return single url */
       }
       return [raw];

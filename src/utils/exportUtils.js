@@ -26,7 +26,7 @@ export const exportTributes = async (tributes, onProgress) => {
                 try {
                     const parsed = JSON.parse(raw);
                     if (Array.isArray(parsed)) return parsed.filter(Boolean);
-                } catch (_) { }
+                } catch { /* ignore */ }
                 return [raw];
             }
             return [];
